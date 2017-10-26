@@ -54,7 +54,7 @@ class Node(object):
 
     __array_priority__ = 100
 
-    def get_parents(self):
+    def parents(self):
         graph = get_current_graph()
         node_map = { node.value() : node for node in graph }
         parents = set([])
@@ -67,18 +67,18 @@ class Node(object):
         explore(self.value())
         return parents
 
-    def get_children(self):
+    def children(self):
         graph = get_current_graph()
         children = set()
         for node in graph:
-            if self in node.get_parents():
+            if self in node.parents():
                 children.add(node)
         return children
 
     def markov_blanket(self):
         children = self.get_children()
-        parents = self.get_parents()
-        coparents = set([p for node in children for p in node.get_parents()]) - {self}
+        parents = self.parents()
+        coparents = set([p for node in children for p in node.parents()]) - {self}
         return (children, parents, coparents)
 
     def _as_graph_element(self):

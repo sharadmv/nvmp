@@ -3,7 +3,7 @@ from deepx import nn
 from nvmp import T
 
 from nvmp.stats import *
-from nvmp.core import get_current_graph
+from nvmp.core import get_current_graph, trace
 
 
 L = 4
