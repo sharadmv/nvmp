@@ -2,7 +2,9 @@ from functools import lru_cache
 from tensorflow.python.framework import tensor_util
 
 @lru_cache()
-def trace(x):
+def trace(x, stop_nodes=frozenset()):
+    if x in stop_nodes:
+        return "(StopNode)"
     op_type = x.op.type
     parents = x.op.inputs
     parent_traces = list(map(trace, parents))

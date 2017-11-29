@@ -3,3 +3,4 @@ from .ops import Add
 from .graph import get_current_graph, graph
 from .backend import T
 from .trace import trace
+from .atomic import AtomicNode

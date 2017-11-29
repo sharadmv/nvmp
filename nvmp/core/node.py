@@ -6,35 +6,24 @@ from deepx.stats import Distribution
 
 from .graph import get_current_graph
 
-def convert_param(param):
-    if isinstance(param, Node):
-        return param.value()
-    return param
-
 @six.add_metaclass(ABCMeta)
 class Node(object):
 
     def __init__(self, parameters, *args, **kwargs):
-        if isinstance(parameters, list):
-            parameters = list(map(convert_param, parameters))
-        else:
-            parameters = convert_param(parameters)
-        num_samples= kwargs.pop('num_samples', None)
-        super(Node, self).__init__(parameters, *args, **kwargs)
+        pass
 
-        get_current_graph().add(self)
-        if num_samples is None:
-            self._value = self.sample(1)[0]
-        else:
-            self._value = self.sample(num_samples)
-
+    @abstractmethod
     def value(self):
-        return self._value
+        pass
 
     @staticmethod
     def _overload_all_operators():
         for operator in tf.Tensor.OVERLOADABLE_OPERATORS:
             Node._overload_operator(operator)
+
+    def __add__(self, right):
+        from .ops import Add
+        return Add(self, right)
 
     @staticmethod
     def _overload_operator(operator):
@@ -81,7 +70,12 @@ class Node(object):
         coparents = set([p for node in children for p in node.parents()]) - {self}
         return (children, parents, coparents)
 
+    def get_stats(self, *names, feed_dict={}):
+        return [self.get_stat(name, feed_dict=feed_dict) for name in names]
+
+    @abstractmethod
+    def get_stat(self, name):
+        pass
+
     def _as_graph_element(self):
         return self.value()
-
-Node._overload_all_operators()

@@ -10,8 +10,10 @@ L = 4
 D = 6
 batch_size = T.placeholder(np.int32, None)
 
-X = Gaussian([T.eye(L), T.zeros(L)], num_samples=batch_size)
-obs_net = nn.Relu(L, 100) >> nn.Relu(100) >> nn.Relu(D)
-Y = Gaussian([T.eye(D, batch_shape=[batch_size]), obs_net(X)])
+X = Gaussian([T.eye(L), T.zeros(L)])
+# obs_net = nn.Relu(L, 100) >> nn.Relu(100) >> nn.Relu(D)
+Y = Gaussian([T.eye(L), X])
+
+q_X = Gaussian([T.variable(T.eye(L)), T.variable(T.zeros(L))])
 
 sess = T.interactive_session()

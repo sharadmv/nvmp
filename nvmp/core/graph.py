@@ -8,6 +8,11 @@ class Graph(object):
         else:
             self.graph = set([])
 
+    def get_node(self, x):
+        for node in self.graph:
+            if x == node.value():
+                return node
+
     def add(self, node):
         self.graph.add(node)
 

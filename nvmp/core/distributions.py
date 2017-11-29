@@ -1,6 +1,6 @@
 import inspect
 
-from deepx import stats
+from .. import stats
 from ..core import Node
 
 # def convert_class(cls):
