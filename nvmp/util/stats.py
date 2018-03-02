@@ -7,6 +7,7 @@ def get_stats(x, *names, feed_dict={}):
 
 def get_stat(x, name, feed_dict={}):
     node = get_current_graph().get_node(x)
+    print(x, name)
     if node is not None:
         return node.get_stat(name, feed_dict=feed_dict)
     if name == 'x':

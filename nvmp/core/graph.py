@@ -27,20 +27,18 @@ class Graph(object):
 
 _DEFAULT_GRAPH = Graph()
 
-GRAPH_STACK = [_DEFAULT_GRAPH]
-
-def get_current_graph():
-    return GRAPH_STACK[-1]
+GRAPH_STACK = []
 
 @contextmanager
-def graph(**kwargs):
-    graph = Graph(**kwargs)
-    push_graph(graph)
-    yield graph
-    pop_graph(graph)
-
-def push_graph(graph):
-    GRAPH_STACK.append(graph)
-
-def pop_graph(graph):
+def graph():
+    GRAPH_STACK.append(Graph())
+    yield get_current_graph()
     GRAPH_STACK.pop(-1)
+
+def in_graph():
+    return len(GRAPH_STACK) > 0
+
+def get_current_graph():
+    if len(GRAPH_STACK) == 0:
+        return None
+    return GRAPH_STACK[-1]
