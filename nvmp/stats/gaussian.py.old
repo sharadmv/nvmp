@@ -1,0 +1,89 @@
+import numpy as np
+from deepx import T
+from deepx.stats import NIW
+
+from ..core import ExponentialFamily, sample, get_statistic, get_graph_context
+
+class Gaussian(ExponentialFamily):
+
+    def get_param_dim(self):
+        return {
+            'x': 1,
+            'xxT': 2
+        }
+
+    def _sample(self):
+        sigma, mu = map(sample, self.get_parameters('regular'))
+
+        L = T.cholesky(sigma)
+        num_samples = 1
+        sample_shape = T.concat([[num_samples], T.shape(mu)], 0)
+        noise = T.random_normal(sample_shape)
+        L = T.tile(L[None], T.concat([[num_samples], T.ones([T.rank(sigma)], dtype=np.int32)]))
+        return mu + T.matmul(L, noise[..., None])[0, ..., 0]
+
+    def log_likelihood(self, x):
+        sigma, mu = self.get_parameters('regular')
+        d = T.to_float(T.shape(x)[-1])
+        J = get_statistic(sigma, '-0.5S^-1')
+        m = get_statistic(mu, 'x')
+        mmT = get_statistic(mu, 'xxT')
+        logdet = get_statistic(sigma, '-0.5log|S|')
+        stats = {
+            'x': get_statistic(x, 'x'),
+            'xxT': get_statistic(x, 'xxT'),
+        }
+        params = {
+            'xxT': J,
+            'x': T.matmul(-(J + T.matrix_transpose(J)), m[..., None])[..., 0],
+        }
+        result = (
+            T.sum(stats['xxT'] * params['xxT'], [-1, -2]) +
+            T.sum(stats['x'] * params['x'], [-1]) +
+            T.sum(mmT * J, [-1, -2]) + logdet - d / 2. * np.log(2 * np.pi)
+        )
+        return result
+
+    def statistics(self):
+        return {'x', 'xxT'}
+
+    def expected_sufficient_statistics(self):
+        sigma, mu = self.get_parameters('regular')
+        eta1 = get_statistic(mu, 'xxT') - 0.5 * T.matrix_inverse(get_statistic(sigma, '-0.5S^-1'))
+        eta2 = get_statistic(mu, 'x')
+        return {
+            'xxT': eta1,
+            'x': eta2,
+        }
+
+    @classmethod
+    def regular_to_natural(cls, regular_parameters):
+        sigma, mu = regular_parameters
+        J = get_statistic(sigma, '-0.5S^-1')
+        m = get_statistic(mu, 'x')
+        return {
+            'xxT': J,
+            'x': T.matmul(-2 * J, m[..., None])[..., 0],
+        }
+
+    @classmethod
+    def natural_to_regular(cls, natural_parameters):
+        J, m = natural_parameters['xxT'], natural_parameters['x']
+        sigma = T.matrix_inverse(-2 * J)
+        mu = T.matmul(sigma, m[..., None])[..., 0]
+        return [sigma, mu]
+
+    def log_z(self):
+        natparam = self.get_parameters('natural')
+        J, m = natparam['xxT'], natparam['x']
+        return (
+            -0.25 * T.matmul(m[..., None, :], T.matmul(T.matrix_inverse(J), m[..., None]))[..., 0, 0]
+            -0.5 * T.logdet(-2 * J)
+        )
+
+    def as_variable(self):
+        params = self.get_parameters('natural')
+        return Gaussian({
+            'xxT': T.variable(params['xxT']),
+            'x': T.variable(params['x']),
+        }, 'natural')
